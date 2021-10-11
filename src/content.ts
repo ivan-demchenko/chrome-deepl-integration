@@ -1,3 +1,9 @@
+import {
+  GetClickedElementMsgResponse,
+  SetClickedElementValueMsgResponse,
+  TabMessagePayload,
+} from "./types";
+
 let clickedEl: HTMLInputElement = null;
 const ALLOWED_TAGS = ["INPUT", "TEXTAREA"];
 
@@ -11,14 +17,16 @@ document.addEventListener(
   true
 );
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type && request.type == "get-clicked-element") {
-    sendResponse({ value: clickedEl.value });
-  }
+chrome.runtime.onMessage.addListener(
+  (request: TabMessagePayload, sender, sendResponse) => {
+    if (request.type && request.type == "get-clicked-element") {
+      sendResponse({ value: clickedEl.value } as GetClickedElementMsgResponse);
+    }
 
-  if (request.type && request.type == "set-clicked-element-value") {
-    clickedEl.value = request.newValue;
-    clickedEl = null;
-    sendResponse({ done: true });
+    if (request.type && request.type == "set-clicked-element-value") {
+      clickedEl.value = request.newValue;
+      clickedEl = null;
+      sendResponse({ done: true } as SetClickedElementValueMsgResponse);
+    }
   }
-});
+);

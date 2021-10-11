@@ -1,3 +1,21 @@
+import {
+  GetClickedElementMsgResponse,
+  SetClickedElementValueMsgResponse,
+  TabMessagePayload,
+} from "./types";
+
+const sendTabMessage = <T>(
+  payload: TabMessagePayload,
+  frameId: number,
+  tab: chrome.tabs.Tab
+) => {
+  return new Promise<T>((res) => {
+    chrome.tabs.sendMessage(tab.id, payload, { frameId }, (response: T) => {
+      res(response);
+    });
+  });
+};
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "chrome-deepl",
@@ -6,34 +24,24 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["selection"],
   });
 
-  chrome.contextMenus.onClicked.addListener((info, tab) => {
+  chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "chrome-deepl") {
-      chrome.tabs.sendMessage(
-        tab.id,
+      const clickedEl = await sendTabMessage<GetClickedElementMsgResponse>(
         { type: "get-clicked-element" },
-        { frameId: info.frameId },
-        (clickedEl) => {
-          fetch(
-            `https://api-free.deepl.com/v2/translate?auth_key=${process.env.APIKEY}&text=${clickedEl.value}&target_lang=de`
-          )
-            .then((resp) => resp.json())
-            .then((deeplResp) => {
-              chrome.tabs.sendMessage(
-                tab.id,
-                {
-                  type: "set-clicked-element-value",
-                  newValue: deeplResp.translations[0].text,
-                },
-                { frameId: info.frameId },
-                (data) => {
-                  console.log(data);
-                }
-              );
-            })
-            .catch((e) => {
-              console.error(e);
-            });
-        }
+        info.frameId,
+        tab
+      );
+      const rawResp = await fetch(
+        `https://api-free.deepl.com/v2/translate?auth_key=${process.env.APIKEY}&text=${clickedEl.value}&target_lang=de`
+      );
+      const deeplResp = await rawResp.json();
+      await sendTabMessage<SetClickedElementValueMsgResponse>(
+        {
+          type: "set-clicked-element-value",
+          newValue: deeplResp.translations[0].text,
+        },
+        info.frameId,
+        tab
       );
     }
   });
