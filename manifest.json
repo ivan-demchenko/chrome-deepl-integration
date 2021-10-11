@@ -1,0 +1,15 @@
+{
+  "name": "Chrome Deepl",
+  "description": "Translate inline with Deepl",
+  "version": "1.0",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "permissions": ["storage", "contextMenus", "activeTab"],
+  "content_scripts": [{
+    "matches": ["https://*/*", "file://*/*"],
+    "js": ["dist/content.js"],
+    "match_about_blank": true
+  }]
+}
